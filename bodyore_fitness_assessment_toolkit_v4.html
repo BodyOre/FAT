@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Body Ore - Fitness Assessment Toolkit</title>
+<meta name="description" content="Interlinked fitness assessment calculators for BMI, WHtR, body fat, calories, protein, goal weight and macros.">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  body{font-family:Inter,ui-sans-serif,system-ui;background:#F4F2ED;color:#292524}
+  .font-display{font-family:Fraunces,serif}.font-mono{font-family:'IBM Plex Mono',monospace}
+  .input{width:100%;border:1px solid #d6d3d1;border-radius:.375rem;background:#fff;padding:.55rem .75rem;font-size:15px}
+  .input:focus{outline:none;border-color:#166534;box-shadow:0 0 0 2px #16653433}
+  .tab{padding:.55rem .8rem;border:1px solid #d6d3d1;background:#fff;font-size:.8rem;font-weight:600;white-space:nowrap}
+  .tab.active{background:#166534;color:#fff;border-color:#166534}
+  .card{background:#fff;border:1px solid #e7e5e4;border-radius:.5rem}
+  .result{border:2px solid #292524;background:#fff}
+.coaching-context{position:relative}
+@media (max-width:640px){
+  .coaching-context a{width:100%}
+}
+</style>
+</head>
+<body>
+<div id="app" class="max-w-7xl mx-auto px-4 sm:px-6 py-7">
+  <header class="border-b-4 border-stone-900 pb-4 mb-5 flex flex-wrap gap-4 items-end justify-between">
+    <div>
+      <h1 class="font-display text-3xl sm:text-4xl font-semibold tracking-tight">Body Ore -Fitness Assessment Toolkit</h1>
+      <p class="text-sm text-stone-500 mt-1">One shared assessment. Multiple interlinked calculators.</p>
+    </div>
+    <button id="reset" class="text-sm font-semibold text-emerald-800 border border-emerald-800/30 rounded-md px-3 py-2">Reset</button>
+  </header>
+
+  <section class="card p-4 mb-5">
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <div>
+        <div class="text-[11px] font-semibold tracking-wide uppercase text-stone-500">Shared client data</div>
+        <div class="text-xs text-stone-400 mt-1">Change these once; every calculator updates.</div>
+      </div>
+      <div id="completion" class="font-mono text-xs text-stone-400"></div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      <label class="col-span-2"><span class="label">Name</span><input id="name" class="input" placeholder="Optional"></label>
+      <label><span class="label">Sex</span><select id="sex" class="input"><option value="male">Male</option><option value="female">Female</option></select></label>
+      <label><span class="label">Age</span><input id="age" class="input" type="number" min="10" max="100" value="30"></label>
+      <label><span class="label">Height (cm)</span><input id="height" class="input" type="number" min="100" max="250" value="175"></label>
+      <label><span class="label">Weight (kg)</span><input id="weight" class="input" type="number" min="20" max="350" value="75"></label>
+      <label><span class="label">Waist (<span id="sharedWaistUnit">cm</span>)</span><input id="waist" class="input" type="text" inputmode="decimal" autocomplete="off" placeholder="Optional"></label>
+      <label><span class="label">Neck (<span id="sharedNeckUnit">cm</span>)</span><input id="neck" class="input" type="text" inputmode="decimal" autocomplete="off" placeholder="Optional"></label>
+      <label id="hipWrap" class="hidden"><span class="label">Hip (<span id="sharedHipUnit">cm</span>)</span><input id="hip" class="input" type="text" inputmode="decimal" autocomplete="off" placeholder="Female body-fat estimate"></label>
+    </div>
+    <style>.label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#78716c;margin-bottom:4px}</style>
+    <div class="mt-3 flex flex-wrap items-center gap-3">
+      <span class="label !mb-0">Circumference unit</span>
+      <div class="flex rounded-md border border-stone-300 overflow-hidden">
+        <button type="button" id="sharedUnitCm" class="px-3 py-2 text-xs font-semibold bg-emerald-800 text-white">cm</button>
+        <button type="button" id="sharedUnitIn" class="px-3 py-2 text-xs font-semibold bg-white text-stone-600">in</button>
+      </div>
+      <span class="text-[11px] text-stone-400">Waist, neck and hip use this unit throughout the toolkit.</span>
+    </div>
+    <div id="dataNote" class="text-[11px] text-stone-400 mt-3"></div>
+  </section>
+
+  <section class="card p-4 mb-5 border-emerald-800/20 bg-emerald-800/5">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <div class="text-[11px] font-semibold tracking-wide uppercase text-emerald-800">Want a personalised plan?</div>
+        <div class="font-display text-xl font-semibold text-stone-900">Your numbers are a starting point. Your plan should be personal.</div>
+        <p class="text-xs text-stone-500 mt-1">Get training, nutrition, or both — built around your goals and actual schedule.</p>
+      </div>
+      <a class="shrink-0 inline-flex items-center justify-center rounded-md bg-emerald-800 hover:bg-emerald-900 text-white text-sm font-semibold px-4 py-2.5"
+         href="mailto:HeyCoach@proton.me?subject=Coaching%20Enquiry%20%E2%80%94%20Body%20Ore&amp;body=Hey%20Dhruv%2C%0A%0AI%27m%20%5BName%5D%2C%20and%20I%27m%20looking%20for%20%5BTraining%20%2F%20Nutrition%20%2F%20Training%20%2B%20Nutrition%20%2F%20Custom%5D%20coaching.%0A%0AI%27m%20available%20to%20connect%20from%20%5BDate%20%26%20Time%5D.%0A%0AYou%20can%20reach%20me%20at%20%5BMobile%20Number%20%2F%20Email%5D.%0A%0AThanks%20and%20regards%2C%0A%5BName%5D">Start Your Program</a>
+    </div>
+  </section>
+
+  <nav class="flex gap-1 overflow-x-auto pb-1 mb-5" id="tabs">
+    <button class="tab active" data-tab="bmi">BMI</button>
+    <button class="tab" data-tab="whtr">WHtR</button>
+    <button class="tab" data-tab="bodyfat">Body Fat</button>
+    <button class="tab" data-tab="calories">Calories</button>
+    <button class="tab" data-tab="protein">Protein</button>
+    <button class="tab" data-tab="goal">Goal Weight</button>
+    <button class="tab" data-tab="macros">Macros</button>
+  </nav>
+
+  <main id="content"></main>
+
+  <footer class="mt-8 pt-4 border-t border-stone-200 text-center text-[11px] text-stone-400">
+    Estimates are for general fitness guidance and are not a diagnosis or clinical assessment.
+  </footer>
+</div>
+
+<script>
+const state = {
+  name:"", sex:"male", age:30, height:175, weight:75, waist:"", neck:"", hip:"",
+  activity:"moderate", goal:"loss", calorieFormula:"mifflin", intensity:"moderate",
+  proteinBasis:"bodyweight", proteinRate:2.0, fatPct:28, targetBF:15, weeklyRate:0.5, circumferenceUnit:"cm"
+};
+
+const $ = id => document.getElementById(id);
+const n = id => parseFloat($(id).value);
+const valid = x => Number.isFinite(Number(x)) && Number(x) > 0;
+const numericOr = (x, fallback=0) => Number.isFinite(Number(x)) ? Number(x) : fallback;
+const round = (x,d=0) => Number(x.toFixed(d));
+const esc = s => String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const activity = {
+  sedentary:1.2, light:1.375, moderate:1.55, very:1.725, extra:1.9
+};
+const activityLabels = {
+  sedentary:"Sedentary",light:"Lightly active",moderate:"Moderately active",
+  very:"Very active",extra:"Extremely active"
+};
+
+function syncShared(){
+  ["name","sex","age","height","weight","waist","neck","hip"].forEach(id=>{
+    const el=$(id);
+    if(id==="name") state[id]=el.value;
+    else if(id==="sex") state[id]=el.value;
+    else state[id]=el.value===""?"":parseFloat(el.value);
+  });
+  $("hipWrap").classList.toggle("hidden",state.sex!=="female");
+  updateNote();
+  render();
+}
+function updateNote(){
+  const needed = ["height","weight"].filter(k=>!valid(state[k]));
+  if(!valid(state.waist)) needed.push("waist");
+  $("completion").textContent = `${["height","weight","waist","neck","hip"].filter(k=>valid(state[k])).length}/5 measurements`;
+  $("dataNote").textContent = needed.length
+    ? "Add missing measurements above to unlock more estimates."
+    : "Shared measurements are ready. Individual calculators may still need goal/activity selections.";
+}
+function bmi(){
+  return valid(state.height)&&valid(state.weight) ? state.weight/Math.pow(state.height/100,2) : null;
+}
+function bmiCat(x){
+  if(x==null)return ["Enter height and weight",""];
+  if(x<18.5)return ["Underweight","Below the conventional healthy BMI range."];
+  if(x<25)return ["Healthy weight","Within the conventional healthy BMI range."];
+  if(x<30)return ["Overweight","Above the conventional healthy BMI range. BMI does not distinguish fat from muscle."];
+  return ["Obesity","BMI is 30 or higher. Consider body composition alongside BMI."];
+}
+function whtr(){
+  return valid(state.waist)&&valid(state.height)?Number(state.waist)/Number(state.height):null;
+}
+function whtrCat(x){
+  if(x==null)return ["Enter waist and height",""];
+  if(x<0.4)return ["Low","Below the commonly used reference range."];
+  if(x<0.5)return ["Generally healthy","Waist is less than half of height."];
+  if(x<0.6)return ["Increased risk","Waist is at least half of height."];
+  return ["Higher risk","Waist is 60% or more of height."];
+}
+function bodyFat(){
+  if(!valid(state.height)||!valid(state.waist)||!valid(state.neck)) return null;
+
+  const h = Number(state.height) / 2.54;
+  const waist = Number(state.waist) / 2.54;
+  const neck = Number(state.neck) / 2.54;
+
+  let result = null;
+  if(state.sex==="male"){
+    const circumference = waist - neck;
+    if(circumference <= 0) return null;
+    result = 86.010*Math.log10(circumference)-70.041*Math.log10(h)+36.76;
+  } else {
+    if(!valid(state.hip)) return null;
+    const hip = Number(state.hip) / 2.54;
+    const circumference = waist + hip - neck;
+    if(circumference <= 0) return null;
+    result = 163.205*Math.log10(circumference)-97.684*Math.log10(h)-78.387;
+  }
+
+  // Never surface mathematically valid but physiologically implausible estimates.
+  if(!Number.isFinite(result) || result < 3 || result > 60) return null;
+  return result;
+}
+function bfCat(x){
+  if(x==null){
+    const complete = valid(state.height)&&valid(state.waist)&&valid(state.neck)&&(state.sex==="male"||valid(state.hip));
+    return complete ? ["Check measurements","The measurements produced an implausible estimate. Check the tape position and units."] : ["Need more measurements","Enter the required circumference measurements to estimate body fat."];
+  }
+  if(state.sex==="male"){
+    if(x<6)return ["Very lean","Very low estimated body fat; interpret with context."];
+    if(x<14)return ["Athletic","Lean range often seen in athletic populations."];
+    if(x<18)return ["Fitness","A relatively lean fitness-oriented range."];
+    if(x<25)return ["Average","Within a common general-population range."];
+    return ["Higher body fat","Above the range commonly associated with lean fitness levels."];
+  } else {
+    if(x<14)return ["Very lean","Very low estimated body fat; interpret with context."];
+    if(x<21)return ["Athletic","Lean range often seen in athletic populations."];
+    if(x<25)return ["Fitness","A relatively lean fitness-oriented range."];
+    if(x<32)return ["Average","Within a common general-population range."];
+    return ["Higher body fat","Above the range commonly associated with lean fitness levels."];
+  }
+}
+function bmr(){
+  const w=Number(state.weight), h=Number(state.height), a=Number(state.age);
+  if(!valid(w)||!valid(h)||!valid(a))return null;
+
+  if(state.calorieFormula==="katch"){
+    const bf=bodyFat();
+    if(valid(bf) && bf < 60){
+      const lbm=w*(1-bf/100);
+      return 370 + 21.6*lbm;
+    }
+    // Katch-McArdle needs body fat. Fall back safely until it is available.
+  }
+
+  if(state.calorieFormula==="harris"){
+    return state.sex==="male"
+      ? 88.362+13.397*w+4.799*h-5.677*a
+      : 447.593+9.247*w+3.098*h-4.33*a;
+  }
+
+  const base=10*w+6.25*h-5*a;
+  return state.sex==="male"?base+5:base-161;
+}
+function bmrFormulaNote(){
+  if(state.calorieFormula==="katch" && bodyFat()==null){
+    return "Katch-McArdle selected; enter valid body-fat measurements to use it. Mifflin-St Jeor is used until then.";
+  }
+  return "";
+}
+function tdee(){
+  const x=bmr(); return x==null?null:x*activity[state.activity];
+}
+function calorieTarget(){
+  const t=tdee(); if(t==null)return null;
+  const p=state.goal==="loss"?-1:state.goal==="gain"?1:0;
+  const pct=state.goal==="loss"?(state.intensity==="mild"?.15:state.intensity==="aggressive"?.25:.20)
+    :(state.goal==="gain"?(state.intensity==="mild"?.10:state.intensity==="aggressive"?.20:.15):0);
+  return t*(1+p*pct);
+}
+function protein(){
+  if(!valid(state.weight))return null;
+  return valid(state.weight)&&valid(state.proteinRate) ? Number(state.weight)*Number(state.proteinRate) : null;
+}
+function macroCalc(){
+  const kcal=calorieTarget(), p=protein();
+  if(kcal==null||p==null||!valid(state.fatPct))return null;
+  const pk=p*4, fk=kcal*state.fatPct/100, cg=Math.max(0,kcal-pk-fk), fg=fk/9, carbs=cg/4;
+  return {kcal,p,fg,carbs,pk,fk,cg};
+}
+function goalWeight(){
+  const bf=bodyFat();
+  if(bf==null||!valid(state.weight)||!valid(state.targetBF)||state.targetBF>=100)return null;
+  const lbm=state.weight*(1-bf/100);
+  return lbm/(1-state.targetBF/100);
+}
+
+function coachingMailto(){
+  const bmiV=bmi(), whtrV=whtr(), bfV=bodyFat(), gwV=goalWeight(), calV=calorieTarget(), protV=protein();
+  const m=macroCalc();
+  const lines=[
+    "Hey Dhruv,",
+    "",
+    "I'm [Name], and I'm looking for [Training / Nutrition / Training + Nutrition / Custom] coaching.",
+    "",
+    "My Body Ore assessment:",
+    `BMI: ${bmiV==null?"Not available":round(bmiV,1)}`,
+    `WHtR: ${whtrV==null?"Not available":round(whtrV,2)}`,
+    `Estimated body fat: ${bfV==null?"Not available":round(bfV,1)+"%"}`,
+    `Current weight: ${valid(state.weight)?state.weight+" kg":"Not available"}`,
+    `Estimated goal weight: ${gwV==null?"Not available":round(gwV,1)+" kg"}`,
+    `Daily calorie target: ${calV==null?"Not available":round(calV)+" kcal"}`,
+    `Protein target: ${protV==null?"Not available":round(protV)+" g/day"}`,
+    `Macros: ${m==null?"Not available":`P ${round(m.p)}g / C ${round(m.carbs)}g / F ${round(m.fg)}g`}`,
+    "",
+    "I'm available to connect from [Date & Time].",
+    "",
+    "You can reach me at [Mobile Number / Email].",
+    "",
+    "Thanks and regards,",
+    "[Name]"
+  ];
+  return "mailto:HeyCoach@proton.me?subject="+encodeURIComponent("Coaching Enquiry — Body Ore")+"&body="+encodeURIComponent(lines.join("\n"));
+}
+function coachingCTA(){
+  return `<div class="card p-4 mt-4 border-emerald-800/20 bg-emerald-800/5">
+    <div class="text-[11px] font-semibold tracking-wide uppercase text-emerald-800">Get personalised help</div>
+    <div class="font-display text-lg font-semibold mt-1">Want help turning this result into a plan?</div>
+    <p class="text-xs text-stone-500 mt-1">Send your assessment with the email pre-filled for you.</p>
+    <a class="inline-flex mt-3 bg-emerald-800 hover:bg-emerald-900 text-white text-sm font-semibold rounded-md px-4 py-2.5" href="${coachingMailto()}">Start Your Program</a>
+    <div class="text-[11px] text-stone-400 mt-2">HeyCoach@proton.me · Coaching Enquiry — Body Ore</div>
+  </div>`;
+}
+function panel(title,value,sub){
+  return `<div class="result rounded-sm p-5"><div class="font-display text-xl font-semibold">${title}</div><div class="border-t-8 border-stone-900 mt-3"></div><div class="flex items-end justify-between gap-4 py-4"><div class="font-mono text-4xl font-bold">${value}</div><div class="text-sm text-stone-500 text-right">${sub||""}</div></div></div>`;
+}
+function field(label,html,hint=""){
+  return `<label class="block"><span class="label">${label}</span>${html}${hint?`<span class="block text-[11px] text-stone-400 mt-1">${hint}</span>`:""}</label>`;
+}
+function circumferenceDisplay(cm){
+  if(!valid(cm)) return "";
+  return state.circumferenceUnit==="in" ? round(cm/2.54,1) : round(cm,1);
+}
+function circumferenceToCm(value){
+  if(!valid(value)) return "";
+  return state.circumferenceUnit==="in" ? value*2.54 : value;
+}
+function syncSharedUnitButtons(){
+  const cm=$("sharedUnitCm"), inch=$("sharedUnitIn");
+  if(cm && inch){
+    cm.className=`px-3 py-2 text-xs font-semibold ${state.circumferenceUnit==="cm"?"bg-emerald-800 text-white":"bg-white text-stone-600"}`;
+    inch.className=`px-3 py-2 text-xs font-semibold ${state.circumferenceUnit==="in"?"bg-emerald-800 text-white":"bg-white text-stone-600"}`;
+  }
+  ["Waist","Neck","Hip"].forEach(x=>{
+    const node=$("shared"+x+"Unit"); if(node) node.textContent=state.circumferenceUnit;
+  });
+}
+function convertTopCircumferenceInputs(){
+  ["waist","neck","hip"].forEach(id=>{
+    const el=$(id);
+    if(!el) return;
+    el.value=valid(state[id]) ? circumferenceDisplay(state[id]) : "";
+  });
+}
+function unitToggle(){
+  return `<div class="flex rounded-md border border-stone-300 overflow-hidden">
+    <button type="button" class="px-3 py-2 text-xs font-semibold ${state.circumferenceUnit==="cm"?"bg-emerald-800 text-white":"bg-white text-stone-600"}" data-circ-unit="cm">cm</button>
+    <button type="button" class="px-3 py-2 text-xs font-semibold ${state.circumferenceUnit==="in"?"bg-emerald-800 text-white":"bg-white text-stone-600"}" data-circ-unit="in">in</button>
+  </div>`;
+}
+function select(id,opts,val){
+  return `<select id="${id}" class="input">${opts.map(([v,l])=>`<option value="${v}" ${v===val?"selected":""}>${l}</option>`).join("")}</select>`;
+}
+function actions(items){
+  return `<div class="flex flex-wrap gap-2 mt-5">${items.map(([id,label])=>`<button class="text-sm font-semibold text-emerald-800 border border-emerald-800/30 rounded-md px-3 py-2" data-action="${id}">${label}</button>`).join("")}</div>`;
+}
+
+function render(){
+  const active=document.querySelector(".tab.active")?.dataset.tab||"bmi";
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===active));
+  let html="";
+  if(active==="bmi"){
+    const x=bmi(),c=bmiCat(x);
+    html=`<div class="grid lg:grid-cols-[1fr_360px] gap-6">
+      <section class="card p-5">
+        <h2 class="font-display text-2xl font-semibold">BMI Calculator</h2>
+        <p class="text-sm text-stone-500 mt-1">Body mass index from your shared height and weight.</p>
+        <div class="grid sm:grid-cols-2 gap-4 mt-5">
+          ${field("Height",`<input class="input" value="${valid(state.height)?state.height:""}" data-shared="height" type="number">`)}
+          ${field("Weight",`<input class="input" value="${valid(state.weight)?state.weight:""}" data-shared="weight" type="number">`)}
+        </div>
+        ${actions([["whtr","Check WHtR"],["bodyfat","Estimate body fat"]])}
+      </section>
+      <div>${panel("Your BMI",x==null?"—":round(x,1),c[0])}<div class="card p-4 mt-4 text-sm text-stone-600">${c[1] || "Enter the required measurements to see an interpretation."}</div>
+        <div class="card p-4 mt-4 text-xs text-stone-500 leading-relaxed"><b class="text-stone-700">Important:</b> BMI is a screening measure. It does not distinguish fat mass from muscle mass or show where fat is distributed.</div>${coachingCTA()}
+      </div>
+    </div>`;
+  }
+  if(active==="whtr"){
+    const x=whtr(),c=whtrCat(x);
+    html=`<div class="grid lg:grid-cols-[1fr_360px] gap-6"><section class="card p-5">
+      <h2 class="font-display text-2xl font-semibold">WHtR Calculator</h2>
+      <p class="text-sm text-stone-500 mt-1">Waist-to-height ratio: waist circumference ÷ height.</p>
+      <div class="grid sm:grid-cols-2 gap-4 mt-5">
+        ${field("Height",`<input class="input" value="${valid(state.height)?state.height:""}" data-shared="height" type="number">`)}
+        ${field(`Waist (${state.circumferenceUnit})`,`<input class="input" value="${circumferenceDisplay(state.waist)}" data-circ="waist" type="text" inputmode="decimal" autocomplete="off">`,"Measure around the waist consistently; use the same site each time.")}
+      </div>
+      ${actions([["bmi","View BMI"],["bodyfat","Estimate body fat"]])}
+    </section><div>${panel("Your WHtR",x==null?"—":round(x,2),c[0])}<div class="card p-4 mt-4 text-sm text-stone-600">${c[1] || "Enter the required measurements to see an interpretation."}</div>
+      <div class="card p-4 mt-4 text-xs text-stone-500">A simple screening measure for central adiposity. It should be interpreted alongside other measures rather than used as a diagnosis.</div>${coachingCTA()}
+    </div></div>`;
+  }
+  if(active==="bodyfat"){
+    const x=bodyFat(),c=bfCat(x);
+    const need=state.sex==="female"?"Height + waist + neck + hip":"Height + waist + neck";
+    html=`<div class="grid lg:grid-cols-[1fr_360px] gap-6"><section class="card p-5">
+      <h2 class="font-display text-2xl font-semibold">Body-Fat Estimate</h2>
+      <p class="text-sm text-stone-500 mt-1">U.S. Navy circumference method. This is an estimate, not a direct measurement.</p>
+      <div class="grid sm:grid-cols-2 gap-4 mt-5">
+        ${field("Height (cm)",`<input class="input" value="${valid(state.height)?state.height:""}" data-shared="height" type="number">`)}
+        ${field(`Waist (${state.circumferenceUnit})`, `<input class="input" value="${circumferenceDisplay(state.waist)}" data-circ="waist" type="text" inputmode="decimal" autocomplete="off">`)}
+        ${field(`Neck (${state.circumferenceUnit})`, `<input class="input" value="${circumferenceDisplay(state.neck)}" data-circ="neck" type="text" inputmode="decimal" autocomplete="off">`)}
+        ${state.sex==="female"?field(`Hip (${state.circumferenceUnit})`, `<input class="input" value="${circumferenceDisplay(state.hip)}" data-circ="hip" type="text" inputmode="decimal" autocomplete="off">`):""}
+      </div>
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        <span class="text-[11px] font-semibold uppercase tracking-wide text-stone-500">Circumference unit</span>${unitToggle()}
+      </div>
+      <p class="text-[11px] text-stone-400 mt-3">Required for ${state.sex}: ${need}. Waist and neck are shown in your selected unit; the calculation converts them internally. Measure the waist consistently and keep the tape level.</p>
+      ${actions([["protein","Calculate protein"],["goal","Calculate goal weight"],["calories","Calculate calories"]])}
+    </section><div>${panel("Estimated body fat",x==null?"—":round(x,1)+"%",c[0])}<div class="card p-4 mt-4 text-sm text-stone-600">${c[1] || "Enter the required measurements to see an interpretation."}</div>
+      ${x!=null && valid(state.weight)?`<div class="card p-4 mt-4 text-sm"><div class="flex justify-between"><span>Estimated lean mass</span><b class="font-mono">${round(state.weight*(1-x/100),1)} kg</b></div><div class="flex justify-between mt-2"><span>Estimated fat mass</span><b class="font-mono">${round(state.weight*x/100,1)} kg</b></div></div>`:""}${coachingCTA()}
+    </div></div>`;
+  }
+  if(active==="calories"){
+    const br=bmr(),td=tdee(),tar=calorieTarget();
+    html=`<div class="grid lg:grid-cols-[1fr_360px] gap-6"><section class="card p-5">
+      <h2 class="font-display text-2xl font-semibold">Calorie Needs</h2>
+      <p class="text-sm text-stone-500 mt-1">Uses the shared assessment plus activity and goal.</p>
+      <div class="grid sm:grid-cols-2 gap-4 mt-5">
+        ${field("Activity",select("activity",[["sedentary","Sedentary"],["light","Lightly active"],["moderate","Moderately active"],["very","Very active"],["extra","Extremely active"]],state.activity))}
+        ${field("BMR formula",select("calorieFormula",[["mifflin","Mifflin-St Jeor"],["katch","Katch-McArdle"],["harris","Harris-Benedict"]],state.calorieFormula))}
+        ${field("Goal",select("goal",[["loss","Fat loss"],["maintain","Maintenance"],["gain","Muscle gain"]],state.goal))}
+        ${field("Intensity",select("intensity",[["mild","Mild"],["moderate","Moderate"],["aggressive","Aggressive"]],state.intensity))}
+      </div>
+      ${actions([["macros","Calculate macros"],["protein","Calculate protein"],["goal","Calculate goal weight"]])}
+    </section><div>${panel("Daily target",tar==null?"—":round(tar)+" kcal",td==null?"":"Maintenance: "+round(td)+" kcal")}
+      <div class="card p-4 mt-4 text-sm space-y-2"><div class="flex justify-between"><span>BMR</span><b class="font-mono">${br==null?"—":round(br)+" kcal"}</b></div><div class="flex justify-between"><span>Activity</span><b class="font-mono">${activityLabels[state.activity]}</b></div>${bmrFormulaNote()?`<div class="text-[11px] text-amber-700 pt-1">${bmrFormulaNote()}</div>`:""}</div>${coachingCTA()}
+    </div></div>`;
+  }
+  if(active==="protein"){
+    const p=protein();
+    html=`<div class="grid lg:grid-cols-[1fr_360px] gap-6"><section class="card p-5">
+      <h2 class="font-display text-2xl font-semibold">Protein Calculator</h2>
+      <p class="text-sm text-stone-500 mt-1">A practical protein target based on body weight and goal.</p>
+      <div class="grid sm:grid-cols-2 gap-4 mt-5">
+        ${field("Goal",select("goal",[["loss","Fat loss"],["maintain","Maintenance"],["gain","Muscle gain"]],state.goal))}
+        ${field("Protein target (g/kg)",`<input id="proteinRate" class="input" type="number" min="1.0" max="3.0" step="0.1" value="${state.proteinRate}">`)}
+      </div>
+      <p class="text-[11px] text-stone-400 mt-3">Starting presets: 2.0 g/kg for fat loss or muscle gain, 1.8 g/kg for maintenance. Adjust based on the individual.</p>
+      ${actions([["macros","Use in macro calculator"],["bodyfat","View body fat"]])}
+    </section><div>${panel("Daily protein",p==null?"—":round(p)+" g",valid(state.weight)?state.weight+" kg body weight":"Enter weight")}
+      <div class="card p-4 mt-4 text-xs text-stone-500">Protein recommendations are general fitness targets, not medical prescriptions.</div>${coachingCTA()}
+    </div></div>`;
+  }
+  if(active==="goal"){
+    const bf=bodyFat(),gw=goalWeight();
+    html=`<div class="grid lg:grid-cols-[1fr_360px] gap-6"><section class="card p-5">
+      <h2 class="font-display text-2xl font-semibold">Goal Weight / Time</h2>
+      <p class="text-sm text-stone-500 mt-1">Uses estimated lean mass to show a body-fat-based goal weight.</p>
+      <div class="grid sm:grid-cols-2 gap-4 mt-5">
+        ${field("Target body fat (%)",`<input id="targetBF" class="input" type="number" min="3" max="45" step="0.5" value="${state.targetBF}">`)}
+        ${field("Planned weekly change (kg)",`<input id="weeklyRate" class="input" type="number" min="0.1" max="2" step="0.1" value="${state.weeklyRate}">`)}
+      </div>
+      <p class="text-[11px] text-stone-400 mt-3">The time estimate assumes lean mass is maintained. Real-world weight change is not perfectly linear.</p>
+      ${actions([["bodyfat","Check body-fat estimate"],["calories","Set calorie target"]])}
+    </section><div>${panel("Estimated goal weight",gw==null?"—":round(gw,1)+" kg",bf==null?"Need body-fat estimate":"Current estimated BF: "+round(bf,1)+"%")}
+      ${gw!=null?`<div class="card p-4 mt-4 text-sm space-y-2"><div class="flex justify-between"><span>Weight to lose/gain</span><b class="font-mono">${round(gw-state.weight,1)} kg</b></div>${valid(state.weeklyRate)?`<div class="flex justify-between"><span>At ${state.weeklyRate} kg/week</span><b class="font-mono">${round(Math.abs(gw-state.weight)/state.weeklyRate,1)} weeks</b></div>`:""}</div>`:""}${coachingCTA()}
+    </div></div>`;
+  }
+  if(active==="macros"){
+    const m=macroCalc();
+    html=`<div class="grid lg:grid-cols-[1fr_360px] gap-6"><section class="card p-5">
+      <h2 class="font-display text-2xl font-semibold">Macro Calculator</h2>
+      <p class="text-sm text-stone-500 mt-1">Takes the calorie target and protein target from the linked calculators.</p>
+      <div class="grid sm:grid-cols-2 gap-4 mt-5">
+        ${field("Fat (% of calories)",`<input id="fatPct" class="input" type="number" min="15" max="45" step="1" value="${state.fatPct}">`)}
+        ${field("Linked calorie target",`<div class="input bg-stone-50">${calorieTarget()==null?"—":round(calorieTarget())+" kcal"}</div>`)}
+        ${field("Linked protein target",`<div class="input bg-stone-50">${protein()==null?"—":round(protein())+" g"}</div>`)}
+      </div>
+      ${actions([["calories","Adjust calorie target"],["protein","Adjust protein"]])}
+    </section><div>${panel("Daily macros",m==null?"—":`${round(m.kcal)} kcal`,"")}
+      ${m?`<div class="card p-4 mt-4 space-y-3">
+        <div class="flex justify-between"><span>Protein</span><b class="font-mono">${round(m.p)} g · ${round(m.pk)} kcal</b></div>
+        <div class="flex justify-between"><span>Carbohydrates</span><b class="font-mono">${round(m.carbs)} g · ${round(m.cg)} kcal</b></div>
+        <div class="flex justify-between"><span>Fat</span><b class="font-mono">${round(m.fg)} g · ${round(m.fk)} kcal</b></div>
+      </div>`:""}${coachingCTA()}
+    </div></div>`;
+  }
+  $("content").innerHTML=html;
+  bindLocal();
+}
+
+function rerenderPreserveFocus(el){
+  if(!el){ render(); return; }
+
+  const marker = el.dataset?.circ
+    ? `[data-circ="${el.dataset.circ}"]`
+    : el.dataset?.shared
+      ? `[data-shared="${el.dataset.shared}"]`
+      : el.id
+        ? `#${el.id}`
+        : null;
+
+  const rawValue = el.value;
+  const selectionStart = typeof el.selectionStart==="number" ? el.selectionStart : null;
+  const selectionEnd = typeof el.selectionEnd==="number" ? el.selectionEnd : null;
+
+  render();
+
+  if(marker){
+    const next=document.querySelector(marker);
+    if(next){
+      next.value=rawValue;
+      next.focus();
+      if(selectionStart!==null && typeof next.setSelectionRange==="function"){
+        const len=next.value.length;
+        const s=Math.min(selectionStart,len);
+        const e=Math.min(selectionEnd ?? s,len);
+        next.setSelectionRange(s,e);
+      }
+    }
+  }
+}
+function bindLocal(){
+  document.querySelectorAll("[data-circ]").forEach(el=>{
+    el.addEventListener("input",()=>{
+      state[el.dataset.circ]=el.value===""?"":circumferenceToCm(parseFloat(el.value));
+      const top=$(el.dataset.circ);
+      if(top) top.value=el.value;
+      updateNote(); rerenderPreserveFocus(el);
+    });
+  });
+
+  document.querySelectorAll("[data-circ-unit]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      state.circumferenceUnit=btn.dataset.circUnit;
+      syncSharedUnitButtons();
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-shared]").forEach(el=>{
+    el.addEventListener("input",()=>{
+      const k=el.dataset.shared;
+      state[k]=el.value===""?"":parseFloat(el.value);
+      const top=$(k); if(top)top.value=el.value;
+      updateNote(); rerenderPreserveFocus(el);
+    });
+  });
+
+  ["activity","calorieFormula","goal","intensity"].forEach(id=>{
+    const el=$(id);
+    if(el) el.addEventListener("change",()=>{
+      state[id]=el.value;
+      if(id==="goal"){
+        state.proteinRate = state.goal==="maintain" ? 1.8 : 2.0;
+      }
+      render();
+    });
+  });
+
+  const pr=$("proteinRate");
+  if(pr) pr.addEventListener("input",()=>{
+    state.proteinRate=pr.value===""?"":parseFloat(pr.value);
+    rerenderPreserveFocus(pr);
+  });
+
+  const bf=$("targetBF");
+  if(bf) bf.addEventListener("input",()=>{
+    state.targetBF=bf.value===""?"":parseFloat(bf.value);
+    rerenderPreserveFocus(bf);
+  });
+
+  const wr=$("weeklyRate");
+  if(wr) wr.addEventListener("input",()=>{
+    state.weeklyRate=wr.value===""?"":parseFloat(wr.value);
+    rerenderPreserveFocus(wr);
+  });
+
+  const fp=$("fatPct");
+  if(fp) fp.addEventListener("input",()=>{
+    state.fatPct=fp.value===""?"":parseFloat(fp.value);
+    rerenderPreserveFocus(fp);
+  });
+
+  document.querySelectorAll("[data-action]").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.action)));
+}
+function switchTab(tab){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+  render();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
+
+["name","sex","age","height","weight"].forEach(id=>{
+  $(id).addEventListener("input",()=>{
+    if(id==="name"||id==="sex")state[id]=$(id).value;
+    else state[id]=$(id).value===""?"":parseFloat($(id).value);
+    if(id==="sex")$("hipWrap").classList.toggle("hidden",state.sex!=="female");
+    updateNote();
+    render();
+  });
+});
+["waist","neck","hip"].forEach(id=>{
+  $(id).addEventListener("input",()=>{
+    const raw=$(id).value;
+    state[id]=raw===""?"":circumferenceToCm(parseFloat(raw));
+    updateNote();
+    render();
+  });
+});
+$("sharedUnitCm").addEventListener("click",()=>{
+  if(state.circumferenceUnit!=="cm"){
+    state.circumferenceUnit="cm";
+    convertTopCircumferenceInputs();
+    syncSharedUnitButtons();
+    render();
+  }
+});
+$("sharedUnitIn").addEventListener("click",()=>{
+  if(state.circumferenceUnit!=="in"){
+    state.circumferenceUnit="in";
+    convertTopCircumferenceInputs();
+    syncSharedUnitButtons();
+    render();
+  }
+});
+
+$("reset").addEventListener("click",()=>{
+  Object.assign(state,{name:"",sex:"male",age:30,height:175,weight:75,waist:"",neck:"",hip:"",activity:"moderate",goal:"loss",calorieFormula:"mifflin",intensity:"moderate",proteinRate:2.0,fatPct:28,targetBF:15,weeklyRate:.5,circumferenceUnit:"cm"});
+  ["name","sex","age","height","weight"].forEach(id=>$(id).value=state[id]===""?"":state[id]);
+convertTopCircumferenceInputs();
+  convertTopCircumferenceInputs(); syncSharedUnitButtons(); updateNote(); render();
+});
+updateNote();render();
+</script>
+</body>
+</html>
